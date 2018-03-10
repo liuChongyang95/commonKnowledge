@@ -1,0 +1,35 @@
+1/为true的是
+Float  s=new  Float(0.1f);
+Float  t=new  Float(0.1f);
+Double  u=new  Double(0.1);
+
+s==t false 
+s.equals(t) true
+u.equals(s) false
+t.equals(u) false
+也有通过Math.abs()进行差值判断 小于某个范围认为相等。
+
+Float重写了equals方法，先进行类型比较是否同为float 再进行值比较。
+
+2/Java.Thread的方法resume()负责重新开始被一下哪个方法中断的线程的执行()
+suspend
+
+resume suspend
+wait notify
+sleep暂时不同
+
+3/以下代码结果是什么？
+public class foo {
+public static void main(String sgf[]) {
+StringBuffer a=new StringBuffer(“A”);
+StringBuffer b=new StringBuffer(“B”);
+operate(a,b);
+System.out.println(a+”.”+b);
+}
+static void operate(StringBuffer x,StringBuffer y) {
+x.append(y);
+y=x;
+}
+}
+方法中传参是新的地址，不是实际内存。
+y=x和b=a不是同一个操作。
