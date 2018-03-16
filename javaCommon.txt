@@ -149,6 +149,8 @@ IP地址与TCP端口号
 
 Socket chatSocket=new Socket("196.164.1.103",5000);
 
+-----
+检查型异常和非检查型异常
 
 
 

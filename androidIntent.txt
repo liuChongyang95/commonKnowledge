@@ -1,0 +1,289 @@
+Intent促进了组件之间的交互,还是消息的载体，去指导组件做出相应的行为，
+Intent可以携带数据，传递给Activity，Service，BroadcastReceiver。
+
+Intent与组件
+-----------
+startActivity()启动一个Activity的实例。
+onActivityResult()获取新建的Activity执行结果。
+
+启动Service startService()
+绑定Service bindService()
+
+传递广播BroadCast。广播是任何应用都可以接收到的信息，通过将Intent传递给sendBroadcast(),
+sendOrderdBroadcast()或者sendStickyBroadcast()方法，可以将广播传递接收方。
+
+Intent类型
+-----------
+显式Intent，通过类名启动相应的组件，通常因为知道具体的类名，例如A.class。
+Intent intent=new Intent(this,A.class);
+startActivity(intent);
+
+隐式Intent,不指定具体的组件，但是它会声明将要执行的操作，从而匹配到相应的组件。
+最简单的Android中调用系统拨号页面准备打电话的操作。
+Intent intent=new Intent(Intent.ACTION_DIAL);
+Uri data=Uri.parse("tel:"+"18201104668");
+intent.setData(data);
+startActivity(intent);
+
+使用显式Intent启动Activity或者Service的时候，系统会立即启动其中调用的组件。
+
+使用隐式Intent的时候，系统通过将Intent对象中的IntentFilter与组件在AndroidManifest.xml或者代码中动态声明的
+IntentFilter正好匹配，系统就会启动该组件，并把Intent传递给它。如果有多个组件同时匹配到了，系统则会弹出一个选择框，
+让用户选择用哪个应用去处理这个Intent，比如有时候点击一个网页链接，会弹出多个应用，让用户选择用哪个浏览器去加载页面。
+
+IntentFilter通常是定义在AndroidManifest.xml文件中，也可以动态设置，通常是用来声明组件想要接受哪种Intent。
+例如，你如果为一个Activity设置了IntentFilter,你就可以在应用内或者其他应用中，用特定的隐式Intent来启动这个
+Activity，如果没有为Activity设置intentFilter，那么你就只能通过显示intent来启动这个Activity。
+
+官方建议使用显示intent启动Service.不要为Service设置Intentfilter，因为服务大多不可见，不知道会具体有哪些服务响应
+Intent并被启动。
+
+Intent的属性
+-----------
+
+intent作为消息的载体，系统根据它去决定启动哪个组件并且传递组件需要的信息传递过去。
+
+·Component 
+  要启动的组件名称。是显式Intent的重要属性，设置了这个属性后，该Intent只能被传递给由Component定义的组件。
+  隐式Intent没有该属性的，系统是根据其他的信息（如：Action，data等）来判断应该Intent传递给哪个组件。
+  这个属性的目标的组件的具体名称(完全限定类名)，例如，com.example.DemoActivity。
+  可以用过setCommonentName()、setClass()、setClassName()或者Intent构造函数来设置。
+
+·Action
+  表明执行操作的字符串。它会影响Intent的其余信息，如Data、Extras。
+  setAction()或者Intent的构造函数可以来设置。
+  可以自定义，也可以通过系统内置的Action值。
+  ·ACTION_VIEW 当有一些信息需要展示，可以在intent.setAction()设置ACTION_VIEW，调用startActivity(intent)启动
+  ·ACTION_SEND 分享一些信息给其他应用
+  ·ACTION_DIAL 拨打电话
+  ·ACTION_EDIT 编辑文件
+
+·Data
+  待操作数据的引用URI或者数据MIME类型的URI，值通常与Intent的Action有关。
+  如果设置Action的值为ACTION_EDIT，那么Data的值必须是一个被编辑文档的URI。
+  当创建Intent的时候，MIME类型非常重要。例如，一个可以显示图片的Activity可能不能播放视频音频。
+  图片和音频的URI非常相似，设置了MIME类型，可以帮助系统找到最合适的组件接受Intent。
+  有时候MIME可以从URI判断出来。
+  例如：Data是一个包含content：字符串的URI的时候。可以明确知道待处理的数据存在设备中，由ContentProvider控制。
+  ·使用setData()方法设置数据引用的URI，使用setType()设置数据MIME类型，使用setDataAndType()同时设置两个属性。
+  ·setData()和setType()只能单独使用。
+
+·Category
+  对于Intent信息的补充，是一个ArraySet类型的容器，可以添加任意数量的补充信息。
+  addCategory()
+  ·CATEGORY_BROWSABLE，设置Category为该值后，在网页上点击图片或者链接时，系统会考虑将此目标Activity列入
+    可选列表，供用户选择打开图片或链接。
+  ·CATEGORY_LAUNCHER，应用启动的初始Activity。这个Activity会被添加到系统启动launcher当中。
+
+以上这些intent属性可以用来确定具体的组件。
+
+显示Intent示例
+----------
+显示Intent用来启动某个特定的组件Activity或者Service。
+创建显示的Intent的时候，需要设置组件名称（Component）属性，其他可选。
+
+//fileUrl是一个URL字符串，例如“http://www.example.com/image.png”
+Intent downloadIntent=new Intent(context,DownloadService.class);
+downloadIntent.setData(Uri.parse(fileUrl));
+startService(downloadIntent);
+
+这里的Intent的构造函数传入了两个参数，context和组件名。
+显式intent中设置的组件名需要在注册表注册。所以它一般用来启动当前应用内的组件。
+
+隐式Intent
+----------
+隐式Intent比显示的Intent会复杂。可以启动应用内组件，也可以启动应用外组件。
+如果当前应用无法处理隐式intent，其他应用的组件可以处理，系统会弹出框让用户选择。
+
+例如：如果用户有内容想分享给其他应用，新建一个Intent，将Action设置为ACTION_SEND,然后将内容设置到Extras属性中。
+然后调用startActivity();
+
+可以通过resolveActivity()方法确认是否有Activity能处理这个Intent。如果返回为非空，证明只要有一个能处理。是安全的。
+
+//要将textMessage信息分享出去
+
+Intent sendIntent=new Intent();
+sendIntent.setAction(Intent.ACTION_SEND);
+sendIntent.putExtra(Intent.EXTRA_TEXT,textMessage);
+sendIntent.setType("text/plain");//设置数据类型
+
+//判断是否有组件能够处理这个隐式Intent
+if(sendIntent.resolveActivity(getPackageManager())!=null){
+startActivity(sendIntent);
+}
+
+调用startActivity()传入一个隐式Intent时候，会进行判断(含有startActivity操作并携带text/plain类型的intent)
+如果只有一个应用可以处理，那么就会唤起这个应用。如果有多个，就会有弹出框，进行选择。
+
+强制唤起选择框
+-----------
+
+如果需要进行将内容分享到不同的应用，需要每次都弹出选择框。
+
+Intent sendIntent=new Intent(Intent.ACTION_SEND);
+
+String title=getResources().getString(R.string.chooser_title);
+Intent chooser=Intent.createChooser(sendIntent.title);
+
+if(sendIntent.resolveActivity(getPackageManager())!=null){
+startActivity(chooser);
+}
+
+接受隐式Intent
+----------
+
+想配置你的应用可以处理哪些隐式的Intent,需要在AndroidManifest.xml文件的
+<intent-filter>标签内为组件设置一个或者多个过滤器。每个过滤器基于Action、
+Data、Category来指定自身可以处理的Intent类型。如果隐式Intent能够匹配用户设置的
+其中一个过滤器，系统才能唤起这个应用相应的组件并将Intent传递给这个组件。
+
+一个组件应该为一个它能处理的操作单独定义一个处理器，例如相册中的Activity可能有两个过滤器，
+一个过滤器对应浏览照片的操作，另一个过滤器对应编辑照片的操作。
+当这个Activity被启动的时候，根据intent中携带的信息来决定执行哪种操作。
+
+过滤器嵌套在<activity>、<service>标签中。在<intent-filter>标签中，用户可以使用1-3个属性来指定可以接受的Intent
+·<action> 在这个属性中，声明该组件可以执行的操作。
+           该值必须是关于操作的一个字符串，并不是类常量
+·<data> 使用一个或者多个数据URI(scheme、host、port、path等等)和数据的MIME类型来指定接受的数据类型。
+·<category> 声明接受的Intent类型
+
+要接受隐式Intent 
+                必须要有一个<category>属性为CATEGORY_DEFAULT的过滤器。
+startActivity()和startActivityForResult()方法处理Intent的时候，默认的接受组件有一个<category>属性
+为CATEGORY_DEFAULT的过滤器。
+如果一个Activity组件不声明这样一个过滤器，就接收不到隐式intent。
+
+例如：以下代码声明了一个Activity组件，这个组件可以处理action属性为ACTION_SEND，数据类型是文本(text/plain)的隐式Intent。
+<activity android:name="ShareActivity">
+<intent-filter>
+<action android:name="android.intent.action.SEND"/>
+<category android:name="android.intent.category.DEFAULT"/>
+<data android:mimeType="text/plain"/>
+</intent-filter>
+</activity>
+
+用户也可以创建一个包含多个<action><data><category>标签的过滤器，创建时候仅需要确定该组件能处理过滤器
+定义的操作即可。
+
+如果是根据<action><category><data>标签的组合来处理多个Intent，那么需要为这个组件声明多个过滤器。
+
+系统会根据以上三个属性将隐式Intent与所有组件声明的过滤器进行对比，如果这三个属性都能匹配上系统才有可能
+将这个隐式Intent传递给这个组件，因为如果多个应用的组件都能匹配上，会弹出选择框，让用户选择一个应用去处理这个隐式Intent。
+
+为了避免无意间启动了其他的Service，所以建议应用内使用显式的Intent去启动服务。
+
+Activity的过滤器也可以不在AndroidManifest.xml文件中声明，直接使用Intent唤起Activity组件。
+
+广播接收器的过滤声明可以在AndroidManifest.xml文件中声明，也可以使用registerReceiver()方法动态注册，使用完了之后使用
+unregisterReceiver()方法动态注销。
+
+该Activity是该应用的启动入口，它会被储存在系统的launcher列表中
+<activity android:name="MainActivity">
+<intent-filter>
+<action android:name="android.intent.action.MAIN"/>
+<category android:name="android.intent.category.LAUNCHER"/>
+<intent-filter/>
+</activity>
+
+ShareActivity组件可以处理两种隐式Intent，可接受文本，还有文本内容
+一个隐式Intent能够匹配到任意一个过滤器都可以唤起该Activity
+
+该Activity能够处理ACTION_SEND行为且数据类型为text/plain的隐式Intent
+该Activity还能处理ACTION_SEND行为且数据类型是媒体内容的隐式Intent
+<activity android:name="ShareActivity">
+<intent-filter>
+<action android:name="android.intent.action.SEND"/>
+<category android:name="android.intent.category.DEFAULT"/>
+<data android:mimeType="text/plain"/>
+</intent-filter>
+<intent-filter>
+<action android:name="android.intent.action.SEND"/>
+<action android:name="android.intent.action.SEND_MULTIPLE"/>
+<category android:name="android.intent.category.DEFAULT"/>
+<data android:mimeType="image/*"/>
+<data android:mimeType="video/*"/>
+</intent-filter>
+</activity>
+
+PendingIntent
+-----------
+
+PendingIntent是对Intent的一种封装，让外部应用调用内部Intent的时候，就好像是在你的应用中运行一样。
+以下场景会使用pendingIntent。
+·当用户点击通知栏的时候，才执行的Intent（NotificationManager执行的Intent）
+·当用户操作悬浮在主屏幕中的小工具，才执行的Intent
+·在AlarmManager（未来特定时间）执行的Intent。
+
+基于不同的组件类别(Activity Service BroadcastReceiver)进行实例化Intent
+pendingIntent也是。
+·PendingIntent.getActivity()
+·PendingIntent.getService()
+·PendingIntent.getBroadcast()
+以上是返回不同组件对应的PendingIntent
+
+该方法需要当前应用的context,需要封装的Intent，需要一个或多个如何使用该Intent的标志。
+
+Intent匹配规则
+----------
+当发送一个隐式Intent后，会与每一个组件的过滤器进行匹配。匹配属性Action，Category，Data
+
+Action匹配规则
+----------
+可以声明0-多个Action属性
+
+隐式Intent中的Action属性，只要与某个组件的过滤器中的一个Action属性匹配上了，就算成功
+
+如果没有声明Action，那么没有声明Action属性的隐式Intent才能匹配成功
+
+Category匹配规则
+---------
+category可以不声明，也可以声明多个
+
+隐式Intent中的category必须全部匹配到才算成功
+
+隐式Intent里面是CATEGORY_BROWSABLE
+过滤器中是 <category android:name="android.intent.category.DEFAULT" />
+           <category android:name="android.intent.category.BROWSABLE" />
+就可以成功
+过滤器的category属性内容必须大于或者等于隐式Intent的category，隐式Intent才能匹配成功
+
+如果隐式Intent里面没有设置任何Category属性，那么它可以通过任何一个过滤器Category
+
+Data匹配规则
+----------
+<intent-filter>
+<data android:mimeType="video/mpeg" android:scheme="http".../>
+<data android:mimeType="audio/mpeg" android:scheme="http".../>
+.....
+</intent-filter>
+
+每个Data可以指定MIME类型还有数据的URI结构。
+URI包括scheme、host、port、path四个部分，host：port组合起来是authority部分
+<scheme>://<host>:<port>/<path>
+content://192.168.0.1:8080/folder/subfolder/etc
+网络url的格式
+
+URI中每个部分是可选的，有线性依赖
+·如果没有scheme部分，那么host部分会被忽略
+·如果没有host，port会被忽略
+·如果host·port都没有，path会被忽略
+
+URI匹配规则
+·如果一个URI仅声明了scheme部分，那么拥有与其相同的URI都会通过匹配，其他不匹配
+·如果一个URI声明了scheme部分和authority部分，两个都要匹配。path不匹配
+·如果全部声明，就全部比较
+
+path部分可以使用通配符(*)，path其中一部分进行匹配。
+
+Data匹配的时候，MIME类型和URI两者都会进行匹配：
+·如果只有URI没有MIME类型，且MIME类型无法被分析出来，则匹配只有URI相同且不包含MIME类型的隐式Intent才能匹配成功
+·如果只有MIME，就匹配MIME
+·如果都包含，就需要都匹配
+
+隐式Intent内的所有内容都被过滤器所匹配才能进行Intent的接收。所以过滤器中声明的属性要大于等于Intent中包含的属性。
+
+其他
+----------
+PackageManager类中提供了一系列的查询方法去查询可以处理某个Intent的组件
+queryIntentActivities()/queryIntentService()/queryBroadcastRecerviers()
+也提供了一系列的解析方法来确定最佳组件resolveActivity()/resolverService()方法来确定最佳启动组件。
